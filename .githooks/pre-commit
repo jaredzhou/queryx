@@ -1,3 +1,29 @@
 #!/bin/sh
+# Pre-commit hook — mirrors .github/workflows/ci.yml so failures show up
+# locally instead of in CI. Fail fast on the first error.
+#
+# Steps mirror CI:
+#   1. fmt --check   — fail if `moon fmt` would change anything
+#   2. check         — type-check, warnings as errors
+#   3. info + diff   — fail if .mbti interfaces drifted
+#   4. test          — run all unit + integration tests
+set -e
 
-moon check
+echo "==> moon fmt --check"
+moon fmt --check
+
+echo "==> moon check --deny-warn"
+moon check --deny-warn
+
+echo "==> moon info (interface drift check)"
+moon info
+# Only .mbti files indicate interface drift; other dirty files are normal
+# in-progress work and should not block the commit.
+if git diff --name-only -- '*.mbti' | grep -q .; then
+  echo "error: .mbti interfaces drifted — run 'moon info' and commit the result" >&2
+  git diff -- '*.mbti' | sed 's/^/  /' >&2
+  exit 1
+fi
+
+echo "==> moon test"
+moon test
