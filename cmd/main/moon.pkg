@@ -1,0 +1,7 @@
+// import {
+//   "jaredzhou/queryx" @lib,
+// }
+
+options(
+  "is-main": true,
+)
